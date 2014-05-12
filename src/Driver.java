@@ -1,4 +1,4 @@
-import java.util.LinkedList;
+
 import java.util.Random;
 
 public class Driver {
@@ -17,9 +17,6 @@ public class Driver {
 	
 	private MemoryManager mem_man;
 	
-//	 to keep track of memory allocations
-	private LinkedList<Integer> list;
-	
 	Driver(double avg_req_sz, double dist_req_sz, int sim_steps, int mem_size)
 	{
 		this.random = new Random();
@@ -27,41 +24,11 @@ public class Driver {
 		this.avg_req_sz = avg_req_sz;
 		this.dist_req_sz = dist_req_sz;
 		this.sim_steps = sim_steps;
-		this.strategy = "firstfit";
-		
-		this.mem_man = new MemoryManager(mem_size);
-		
-		this.list = new LinkedList<Integer>();
-	}
-	
-	public void setFirstFit()
-	{
-		this.strategy = "firstfit";
-	}
-	
-	public void setNextFit()
-	{
-		this.strategy = "nextfit";
+		this.strategy = "firstfit";	
+		this.mem_man = new MemoryManager(mem_size, strategy);
 	}
 	
 	public void run()
-	{
-		if(strategy.equals("firstfit"))
-		{
-			firstFitRun();
-		}
-		else if (strategy.equals("nextfit"))
-		{
-			nextFitRun();
-		}
-	}
-	
-	private void firstFitRun()
-	{
-		
-	}
-	
-	private void nextFitRun()
 	{
 		
 	}
