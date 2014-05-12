@@ -1,2 +1,2 @@
-Cutie&copy; - A Main Memory Manager implemented in Java
+A Main Memory Manager implemented in Java
 --------
