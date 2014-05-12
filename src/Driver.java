@@ -8,6 +8,7 @@ public class Driver {
 //	 what to vary
 	private double avg_req_sz;
 	private double dist_req_sz;
+	private int sim_steps;
 	private String strategy; 		// "firstfit" or "nextfit"
 	
 //	 what to measure
@@ -19,21 +20,48 @@ public class Driver {
 //	 to keep track of memory allocations
 	private LinkedList<Integer> list;
 	
-	Driver(double avg_req_sz, double dist_req_sz, String strategy, MemoryManager mem_man)
+	Driver(double avg_req_sz, double dist_req_sz, int sim_steps, int mem_size)
 	{
 		this.random = new Random();
 		
 		this.avg_req_sz = avg_req_sz;
 		this.dist_req_sz = dist_req_sz;
+		this.sim_steps = sim_steps;
+		this.strategy = "firstfit";
 		
-		this.strategy = strategy;
-		
-		this.mem_man = mem_man;
+		this.mem_man = new MemoryManager(mem_size);
 		
 		this.list = new LinkedList<Integer>();
 	}
 	
+	public void setFirstFit()
+	{
+		this.strategy = "firstfit";
+	}
+	
+	public void setNextFit()
+	{
+		this.strategy = "nextfit";
+	}
+	
 	public void run()
+	{
+		if(strategy.equals("firstfit"))
+		{
+			firstFitRun();
+		}
+		else if (strategy.equals("nextfit"))
+		{
+			nextFitRun();
+		}
+	}
+	
+	private void firstFitRun()
+	{
+		
+	}
+	
+	private void nextFitRun()
 	{
 		
 	}
