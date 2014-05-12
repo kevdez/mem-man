@@ -1,20 +1,17 @@
 
-public class MemoryManager {
-
-	private int mem_size;
-	private byte[] array;
+public class MemoryManager extends PackableMemory{
 
 	public MemoryManager(int mem_size)
 	{
-		this.mem_size = mem_size;
-		this.array = new byte[mem_size];
+		super(mem_size);
+		
 	}
 	
 	
 //	The three main memory manager functions
 	public void mm_init()
 	{
-		this.array = new byte[mem_size];
+		this.mem = new byte[this.size];
 	}
 	
 	public int mm_request(int n)
