@@ -9,6 +9,7 @@ public class MemoryManager{
 	
 	private ArrayList<Integer> indices;
 	private int currentIndex; // for NextFit
+	private int lastHoleIndex;
 	public int holesCounted1;
 	public int holesCounted2;
 	
@@ -198,10 +199,47 @@ public class MemoryManager{
 	{
 		boolean leftHole = false;
 		boolean rightHole = false;
-		int sizeRemoved = 0;
+		int spaceSize = mem[begIndex];
 		
+		if(begIndex-1 > 0)
+			if(mem[begIndex-1] < 0)
+				leftHole = true;
+		if(begIndex+1+spaceSize < mem_size)
+			if(mem[begIndex+1+spaceSize + 1] < 0)
+				rightHole = true;
 		
+		if(!leftHole && !rightHole)
+		{
+			mem[begIndex] = -spaceSize;
+			mem[begIndex + spaceSize + 1] = -spaceSize;
+			mem[begIndex + 1] = 0;
+			mem[begIndex + 2] = mem_size-1;
 			
+		}
+		else if(leftHole && !rightHole)
+		{
+			mem[begIndex] = 0;
+			int leftHoleSize = -mem[begIndex - 1];
+			mem[begIndex - 2 - leftHoleSize] = -(leftHoleSize + spaceSize);
+			mem[begIndex + 1 + spaceSize] = -(leftHoleSize + spaceSize);
+			
+		}
+		else if(!leftHole && rightHole)
+		{
+			mem[begIndex] = 0;
+			int leftHoleSize = -mem[begIndex - 1];
+			mem[begIndex - 2 - leftHoleSize] = -(leftHoleSize + spaceSize);
+			mem[begIndex + 1 + spaceSize] = -(leftHoleSize + spaceSize);
+			
+		}
+		else if(leftHole && rightHole)
+		{
+			mem[begIndex] = -spaceSize;
+			mem[begIndex + spaceSize + 1] = -spaceSize;
+			mem[begIndex + 1] = 0;
+			mem[begIndex + 2] = mem_size-1;
+			
+		}		
 	}
 	
 	public void setFirstFit()
@@ -214,19 +252,12 @@ public class MemoryManager{
 		this.strat = "nextfit";
 	}
 	
-	
 	public double recordMemoryUtilization()
 	{
 		int usedSize = 0;
-//		for(int i = 0 : mem)
-//		{
-//			if(i.usableSize > 0)
-//			{
-//				usedSize += i.usableSize;
-//			}
-//		}
+
 		double temp = (double) usedSize / (double) mem_size;
-	//	System.out.println(temp);
+
 		return temp;
 	}
 	
