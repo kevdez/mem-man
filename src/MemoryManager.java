@@ -150,7 +150,7 @@ public class MemoryManager{
 			return -1;
 	}
 	
-	public void mm_release(int begIndex)
+	public void mm_release(int begIndex) throws Exception
 	{
 		MemoryBlock blockToRemove = null;
 		boolean shouldRemoveBlock = true;
@@ -162,6 +162,8 @@ public class MemoryManager{
 			if(i.beginningIndex == begIndex)
 			{
 				blockToRemove = i;
+				if(i.usableSize < 0)
+					throw new Exception("Release request is a hole");
 				break;
 			}
 		}
@@ -171,84 +173,88 @@ public class MemoryManager{
 		int indexLeft = 0;
 		if(blockToRemove==null)
 		{
-			System.out.println("Cannot find a block with index of " + begIndex);
+			throw new Exception("Cannot find a block with index of " + begIndex);
 		}
 		else
 		{
-		if(blockToRemove.beginningIndex-1 == -1) // if removed block is left-bound
-		{
-			shouldRemoveBlock = false;
-			list.get(list.indexOf(blockToRemove)).usableSize = -list.get(list.indexOf(blockToRemove)).usableSize;
-		}
-		else
-		{
-			// check left side of the new hole
-			for(MemoryBlock i : list)
+			if(blockToRemove.beginningIndex-1 == -1) // if removed block is left-bound
 			{
-				if (blockToRemove.beginningIndex-1 >= 0				// if the left side is an adjacent hole
-						&& blockToRemove.beginningIndex-1 == i.endingIndex
-						&& i.usableSize < 0)
-				{	
-					leftHole = true;
-					sizeRemoved = Math.abs(blockToRemove.usableSize);
-					blockToEdit = i;
-					index = list.indexOf(i);
-					indexLeft = index;
-					break;
-				}	
+				shouldRemoveBlock = false;
+				list.get(list.indexOf(blockToRemove)).usableSize = -list.get(list.indexOf(blockToRemove)).usableSize;
+				// might have to updateblockToRemove here
 			}
-			// set new size of left hole
-			blockToEdit.usableSize = -(-blockToEdit.usableSize + 4 + blockToRemove.usableSize);
-			
-			// set new endIndex of left hole
-			blockToEdit.endingIndex = 4 + blockToRemove.usableSize;
-			
-			list.set(index, blockToEdit); // replace with a new left hole on linked list
-		}
-		
-		if(blockToRemove.endingIndex+1 == mem_size) // if removed block is right-bound
-		{
-			shouldRemoveBlock = false;
-			int size = list.get(list.indexOf(blockToRemove)).usableSize;
-			if(size > 0)
-				list.get(list.indexOf(blockToRemove)).usableSize = -size;
-		}
-		else
-		{
-			// check right side of the new hole
-			for(MemoryBlock i : list)
+			else	// if the block is not left-bound
 			{
-				if(blockToRemove.endingIndex+1 < mem_size
-						&& blockToRemove.endingIndex+1 == i.beginningIndex
-						&& i.usableSize < 0)
+				// check left side of the new hole
+				for(MemoryBlock i : list)
 				{
-					rightHole = true;
-					blockToEdit = i;
-					index = list.indexOf(i);
-					break;
+					if (blockToRemove.beginningIndex-1 >= 0				// if the left side is an adjacent hole
+							&& blockToRemove.beginningIndex-1 == i.endingIndex
+							&& i.usableSize < 0)
+					{	
+						leftHole = true;
+						sizeRemoved = Math.abs(blockToRemove.usableSize);
+						blockToEdit = i;
+						index = list.indexOf(i);
+						indexLeft = index;
+						break;		// break bc we found the left-hole
+					}	
+				}
+
+				if(blockToEdit != null) // if the left adjacent block was a hole
+				{
+					// set the new size of the left hole
+					blockToEdit.usableSize = -(-blockToEdit.usableSize + 4 + blockToRemove.usableSize);
+					// set new endIndex of left hole
+					blockToEdit.endingIndex = 4 + blockToRemove.usableSize;
+					// replace with a new left hole on the linked list
+					list.set(index, blockToEdit);
 				}
 			}
-			// set new size of right hole
-			blockToEdit.usableSize = -(-blockToEdit.usableSize + 4 + blockToRemove.usableSize);
+		
+			if(blockToRemove.endingIndex+1 == mem_size) // if removed block is right-bound
+			{
+				shouldRemoveBlock = false;
+				int size = list.get(list.indexOf(blockToRemove)).usableSize;
+				if(size > 0)
+					list.get(list.indexOf(blockToRemove)).usableSize = -size;
+			}	
+			else
+			{
+				// check right side of the new hole
+				for(MemoryBlock i : list)
+				{
+					if(blockToRemove.endingIndex+1 < mem_size
+							&& blockToRemove.endingIndex+1 == i.beginningIndex
+							&& i.usableSize < 0)
+					{
+						rightHole = true;
+						blockToEdit = i;
+						index = list.indexOf(i);
+						break;
+					}
+				}
+				// set new size of right hole
+				blockToEdit.usableSize = -(-blockToEdit.usableSize + 4 + blockToRemove.usableSize);
 			
-			// set new beginningIndex
-			blockToEdit.beginningIndex = blockToRemove.beginningIndex;
+				// set new beginningIndex
+				blockToEdit.beginningIndex = blockToRemove.beginningIndex;
+				
+				list.set(index, blockToEdit);
+			}
 		
-			list.set(index, blockToEdit);
-		}
+			if(shouldRemoveBlock)
+			{
+				list.remove(blockToRemove);
+			}
 		
-		if(shouldRemoveBlock)
-		{
-			list.remove(blockToRemove);
-		}
-		
-		if(leftHole && rightHole)
-		{
-			int rightHolesSize = Math.abs(list.get(index).usableSize);
-			list.get(indexLeft).endingIndex = 4 + sizeRemoved + 4 + rightHolesSize; 
-			list.get(indexLeft).usableSize = -(1 + 4 + sizeRemoved + 4 + rightHolesSize);
-			list.remove(index);
-		}
+			if(leftHole && rightHole)
+			{
+				int rightHolesSize = Math.abs(list.get(index).usableSize);
+				list.get(indexLeft).endingIndex = 4 + sizeRemoved + 4 + rightHolesSize; 
+				list.get(indexLeft).usableSize = -(1 + 4 + sizeRemoved + 4 + rightHolesSize);
+				list.remove(index);
+			}
 		}
 	}
 	

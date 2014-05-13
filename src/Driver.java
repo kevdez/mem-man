@@ -17,13 +17,6 @@ public class Driver {
 	private int sim_steps;
 	private String strategy; 		// "firstfit" or "nextfit"
 	
-//	 what to measure
-	private double avg_mem_util1;
-	private double avg_srch_tm1;
-	private double avg_mem_util2;
-	private double avg_srch_tm2;
-	
-	
 	private MemoryManager mem_man;
 	
 	Driver(double avg_req_sz, double dist_req_sz, int sim_steps, int mem_size)
@@ -59,7 +52,12 @@ public class Driver {
 			searchtime1[i] = mem_man.holesCounted;
 			
 			// select block p to be released
-			mem_man.mm_release(nextIndexToRemove());
+			try {
+				mem_man.mm_release(nextIndexToRemove());
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			
 			continueRunning = true;
 		}
@@ -87,7 +85,12 @@ public class Driver {
 			searchtime2[i] = mem_man.holesCounted;
 			
 			// select block p to be released
-			mem_man.mm_release(nextIndexToRemove());
+			try {
+				mem_man.mm_release(nextIndexToRemove());
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			
 			continueRunning = true;
 		}
