@@ -5,6 +5,12 @@ public class Driver {
 		
 	private Random random;
 	
+	//statistics
+	double[] util1;
+	int[] searchtime1;
+	double[] util2;
+	int[] searchtime2;
+	
 //	 what to vary
 	private double avg_req_sz;
 	private double dist_req_sz;
@@ -12,8 +18,11 @@ public class Driver {
 	private String strategy; 		// "firstfit" or "nextfit"
 	
 //	 what to measure
-	private double avg_mem_util;
-	private double avg_srch_tm;
+	private double avg_mem_util1;
+	private double avg_srch_tm1;
+	private double avg_mem_util2;
+	private double avg_srch_tm2;
+	
 	
 	private MemoryManager mem_man;
 	
@@ -30,7 +39,58 @@ public class Driver {
 	
 	public void run()
 	{
+		boolean continueRunning = true;
+		this.util1 = new double[sim_steps];
+		this.searchtime1 = new int[sim_steps];
+		for(int i = 0; i < sim_steps; i++)
+		{
+			do
+			{
+				int n = getSizeOfNextRequest();
+				try {
+					mem_man.mm_request(n);
+				} catch (Exception e) {
+					continueRunning = false;
+				}
+			} while (continueRunning);
+			
+			// record memory utilization
+			util1[i] = mem_man.recordMemoryUtilization();
+			searchtime1[i] = mem_man.holesCounted;
+			
+			// select block p to be released
+			mem_man.mm_release(nextIndexToRemove());
+			
+			continueRunning = true;
+		}
 		
+		this.util2 = new double[sim_steps];
+		this.searchtime2 = new int[sim_steps];
+		
+		mem_man.setNextFit();
+		mem_man.mm_init();
+		
+		for(int i = 0; i < sim_steps; i++)
+		{
+			do
+			{
+				int n = getSizeOfNextRequest();
+				try {
+					mem_man.mm_request(n);
+				} catch (Exception e) {
+					continueRunning = false;
+				}
+			} while (continueRunning);
+			
+			// record memory utilization
+			util2[i] = mem_man.recordMemoryUtilization();
+			searchtime2[i] = mem_man.holesCounted;
+			
+			// select block p to be released
+			mem_man.mm_release(nextIndexToRemove());
+			
+			continueRunning = true;
+		}
 	}
 	
 	private int getSizeOfNextRequest()
@@ -40,5 +100,37 @@ public class Driver {
 		return (int) (temp + avg_req_sz);
 	}
 
+	private int nextIndexToRemove()
+	{
+		int i = random.nextInt(mem_man.list.size());
+		while(mem_man.list.get(i).usableSize < 0)
+		{
+			i = random.nextInt(mem_man.list.size());
+		}
+		return i;
+	}
+
+	public void displayResults()
+	{
+		double totalUtil = 0;
+		double totalAvg = 0;
+		for(int i = 0; i < sim_steps; i++)
+		{
+			totalUtil += this.util1[i];
+			totalAvg += this.searchtime1[i];
+		}
+		System.out.println("Avg Mem Util for FIRST FIT:" + totalUtil/sim_steps);
+		System.out.println("Avg Search Time for FIRST FIT:" + totalAvg/sim_steps);
+		
+		totalUtil = 0;
+		totalAvg = 0;
+		for(int i = 0; i < sim_steps; i++)
+		{
+			totalUtil += this.util2[i];
+			totalAvg += this.searchtime2[i];
+		}
+		System.out.println("Avg Mem Util for NEXT FIT:" + totalUtil/sim_steps);
+		System.out.println("Avg Search Time for NEXT FIT:" + totalAvg/sim_steps);
+	}
 	
 }
