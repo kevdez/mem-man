@@ -78,9 +78,10 @@ public class MemoryManager{
 					}
 					else							// else if there is no hole left
 					{
-						blockToRemove = i;
+						blockToRemove = i;	// POTENTIAL FOR LOSS OF SPACE
 					}
-					break;
+					
+					break;	// break because we found a proper free space
 				}
 			}
 			if(insuffMem)
@@ -211,7 +212,7 @@ public class MemoryManager{
 					list.set(index, blockToEdit);
 				}
 			}
-		
+			blockToEdit = null;
 			if(blockToRemove.endingIndex+1 == mem_size) // if removed block is right-bound
 			{
 				shouldRemoveBlock = false;
@@ -219,12 +220,12 @@ public class MemoryManager{
 				if(size > 0)
 					list.get(list.indexOf(blockToRemove)).usableSize = -size;
 			}	
-			else
+			else // if removed block is not right bound
 			{
 				// check right side of the new hole
 				for(MemoryBlock i : list)
 				{
-					if(blockToRemove.endingIndex+1 < mem_size
+					if(blockToRemove.endingIndex+1 < mem_size		// if there is a hole to the right of new hole
 							&& blockToRemove.endingIndex+1 == i.beginningIndex
 							&& i.usableSize < 0)
 					{
@@ -234,13 +235,15 @@ public class MemoryManager{
 						break;
 					}
 				}
-				// set new size of right hole
-				blockToEdit.usableSize = -(-blockToEdit.usableSize + 4 + blockToRemove.usableSize);
-			
-				// set new beginningIndex
-				blockToEdit.beginningIndex = blockToRemove.beginningIndex;
-				
-				list.set(index, blockToEdit);
+				if(blockToEdit != null)
+				{
+					// set new size of right hole
+					blockToEdit.usableSize = -(-blockToEdit.usableSize + 4 + blockToRemove.usableSize);
+					// set new beginningIndex
+					blockToEdit.beginningIndex = blockToRemove.beginningIndex;
+					// replace
+					list.set(index, blockToEdit);
+				}
 			}
 		
 			if(shouldRemoveBlock)
@@ -250,6 +253,7 @@ public class MemoryManager{
 		
 			if(leftHole && rightHole)
 			{
+				System.out.println("two holes on adjacent sides");
 				int rightHolesSize = Math.abs(list.get(index).usableSize);
 				list.get(indexLeft).endingIndex = 4 + sizeRemoved + 4 + rightHolesSize; 
 				list.get(indexLeft).usableSize = -(1 + 4 + sizeRemoved + 4 + rightHolesSize);
