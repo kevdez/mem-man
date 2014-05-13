@@ -1,3 +1,8 @@
+// Memory utilization and search times are significant differences
+// Current bugs:	
+//	Fragmenting occurs on the manager
+//	The LinkedList implementation should be implemented as int[] array
+//	Consider using the byte[] array implementation, with packing and unpacking
 
 public class Main {
 	

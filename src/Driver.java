@@ -1,3 +1,5 @@
+// first-fit: high memory utilization, high search time
+// best-fit: lower memory utilization, significantly low search time
 
 import java.util.Random;
 

@@ -1,3 +1,5 @@
+// closed
+
 import java.util.LinkedList;
 
 public class MemoryManager{
