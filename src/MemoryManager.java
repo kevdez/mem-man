@@ -1,4 +1,5 @@
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 public class MemoryManager{
 
@@ -6,11 +7,10 @@ public class MemoryManager{
 	int[] mem;
 	String strat;
 	
-	private int currentIndex;
+	private ArrayList<Integer> indices;
+	private int currentIndex; // for NextFit
 	public int holesCounted1;
 	public int holesCounted2;
-	
-	public LinkedList<MemoryBlock> list;
 	
 	public MemoryManager(int mem_size, String strat)
 	{
@@ -19,17 +19,23 @@ public class MemoryManager{
 		this.holesCounted1 = 0;
 		this.holesCounted2 = 0;
 		this.mm_init();
+		this.indices = new ArrayList<Integer>();
+		for(int i = 0; i < mem_size; i++)
+			indices.add(i);	
 	}
 	
 //	The three main memory manager functions
 	public void mm_init()
 	{
+		this.mem = new int[mem_size];
+		Arrays.fill(mem, 0);
+		mem[0] = -(mem_size - 4);
+		mem[mem_size -1] = mem[0];
+		mem[1] = -1;
+		mem[mem_size - 1] = mem_size;
 		this.currentIndex = 0;
 		this.holesCounted1 = 0;
 		this.holesCounted2 = 0;
-		this.list = new LinkedList<MemoryBlock>();
-		MemoryBlock temp = new MemoryBlock(0, mem_size, -(mem_size-4));
-		list.add(temp);
 	}
 	
 //	returns index of first usable word or error if insufficient memory
@@ -38,103 +44,151 @@ public class MemoryManager{
 		int beg = 0;
 		int sz = n;
 		int end = 0;
+		int returnResult = 0;
 		boolean insuffMem = true;
-	
-		MemoryBlock blockToRemove = null;
-		MemoryBlock spaceBlock = null;
-		
+
 		if(strat.equals("firstfit"))
 		{
-			for(MemoryBlock i : list)
+			for(int i = 0; i < mem_size; i++)
 			{
-				if (i.usableSize < 0)		// if there is a hole, count it
-					holesCounted1++;
-				if ( -(i.usableSize) >= n ) // available size >= n
+				if(-mem[i] == n)
 				{
 					insuffMem = false;
-					spaceBlock = i;
+					this.holesCounted1++;
 					
-					// make a block, allocate, change array
-					beg = i.beginningIndex;
-					sz = n;
-					end = i.beginningIndex + 3 + n;
+					mem[i] = n;
+					mem[i+n+1] = n;
+					int predecessor = mem[i+1];
+					mem[i+1] = 0;
+					int successor = mem[i+2];
+					mem[i+2] = 0;
+					if(predecessor >= 0)
+						mem[predecessor+2] = successor;
 					
-					if( (i.endingIndex - end) >= 5 ) // if there is still a hole
+					if(successor < mem_size)
+						mem[successor+1] = predecessor;
+				}
+				else if(-mem[i] > n)
+				{
+					insuffMem = false;
+					this.holesCounted1++;
+					int holeSize = -mem[i];
+					int holeBegin = i + n + 2;
+					int holeEnd = i + holeSize + 1;
+					int predecessor = mem[i+1];
+					mem[i+1] = 0;
+					int successor = mem[i+2];
+					mem[i+2] = 0;
+					if(predecessor >= 0)
+						mem[predecessor+2] = successor;
+					if(successor < mem_size)
+						mem[successor+1] = predecessor;
+					mem[i] = n;
+					mem[i+n+1] = n;	
+					mem[holeBegin] = -(holeEnd-holeBegin-1);
+					mem[holeEnd] = mem[holeBegin];
+					if(-mem[holeBegin] >= 3 && holeEnd+3 < mem_size)	// if the remaining hole is bigger than 3
 					{
-						i.usableSize = -(i.endingIndex - (end + 4));
-						i.beginningIndex = end + 1;
-						spaceBlock = i;
+						mem[holeBegin+1] = predecessor;
+						mem[holeBegin+2] = successor;
+						mem[holeEnd] = mem[holeBegin];
 					}
-					else							// else if there is no hole left
+					else						// else make the entire block allocated
 					{
-						blockToRemove = i;	// POTENTIAL FOR LOSS OF SPACE
+						mem[i] = holeSize;
+						mem[i + holeSize + 1] = holeSize;
+						for(int j = 0; j < holeSize; j++)
+							mem[i+j+1] = 0;
 					}
-					
-					break;	// break because we found a proper free space
+					returnResult = i+1;
+				}
+				else
+				{
+					if(mem[i] < 0)
+					{
+						this.holesCounted1++;
+						if(i+2 < mem_size-4 && mem[i+2] > 0)
+							i = mem[i+2];		// nextHole
+					}
 				}
 			}
 			if(insuffMem)
 				throw new InsufficientMemoryException();
-			
-			MemoryBlock addedBlock = new MemoryBlock(beg, end, sz);
-			list.add(list.indexOf(spaceBlock), addedBlock);
-			if (blockToRemove != null) // if there is a block to remove from the linked list, remove it
-			{
-//				list.remove(blockToRemove);
-				blockToRemove.usableSize = 0;
-			}
-			return beg + 3;
-			
+			return returnResult;
 		}
 		else if(strat.equals("nextfit"))
 		{
-			boolean hasNotLooped = true;
-			int temp = currentIndex;
-			do
+			int copyIndex = currentIndex;
+			while(copyIndex != currentIndex + 1)
 			{
-//				System.out.println(currentIndex);
-				if(list.get(currentIndex).usableSize < 0) // if there is a hole, count it
+				if(-mem[currentIndex] == n)
 				{
-					holesCounted2++;
-					if( -(list.get(currentIndex).usableSize) >= n) // if there is a hole big enough
+					insuffMem = false;
+					this.holesCounted1++;
+					
+					mem[currentIndex] = n;
+					mem[currentIndex+n+1] = n;
+					int predecessor = mem[currentIndex+1];
+					mem[currentIndex+1] = 0;
+					int successor = mem[currentIndex+2];
+					mem[currentIndex+2] = 0;
+					if(predecessor >= 0)
+						mem[predecessor+2] = successor;
+					
+					if(successor < mem_size)
+						mem[successor+1] = predecessor;
+				}
+				else if(-mem[currentIndex] > n)
+				{
+					insuffMem = false;
+					this.holesCounted1++;
+					int holeSize = -mem[currentIndex];
+					int holeBegin = currentIndex + n + 2;
+					int holeEnd = currentIndex + holeSize + 1;
+					int predecessor = mem[currentIndex+1];
+					mem[currentIndex+1] = 0;
+					int successor = mem[currentIndex+2];
+					mem[currentIndex+2] = 0;
+					if(predecessor >= 0)
+						mem[predecessor+2] = successor;
+					if(successor < mem_size)
+						mem[successor+1] = predecessor;
+					mem[currentIndex] = n;
+					mem[currentIndex+n+1] = n;	
+					mem[holeBegin] = -(holeEnd-holeBegin-1);
+					mem[holeEnd] = mem[holeBegin];
+					if(-mem[holeBegin] >= 3 && holeEnd+3 < mem_size)	// if the remaining hole is bigger than 3
 					{
-						insuffMem = false;
-						
-						beg = list.get(currentIndex).beginningIndex;
-						sz = n;
-						end = list.get(currentIndex).beginningIndex + n + 3;
-						
-						if( (list.get(currentIndex).endingIndex - end) >= 5 ) // if there is still a hole
-						{
-							list.get(currentIndex).usableSize = -(list.get(currentIndex).endingIndex - (end + 4));
-							list.get(currentIndex).beginningIndex = end + 1;
-							spaceBlock = list.get(currentIndex);
-						}
-						else							// else if there is no hole left
-						{
-							blockToRemove = list.get(currentIndex);
-						}
-						break;
-					}	
-				}				
-				currentIndex++;
-				if(currentIndex == list.size())
-					currentIndex = 0;
-				if(currentIndex == temp)
-					hasNotLooped = false;
-			} while (currentIndex < list.size() && hasNotLooped);
-			
+						mem[holeBegin+1] = predecessor;
+						mem[holeBegin+2] = successor;
+						mem[holeEnd] = mem[holeBegin];
+					}
+					else						// else make the entire block allocated
+					{
+						mem[currentIndex] = holeSize;
+						mem[currentIndex + holeSize + 1] = holeSize;
+						for(int j = 0; j < holeSize; j++)
+							mem[currentIndex+j+1] = 0;
+					}
+					currentIndex = successor;
+					returnResult = currentIndex+1;
+				}
+				else
+				{
+					if(mem[currentIndex] < 0)
+					{
+						this.holesCounted1++;
+						if(currentIndex+2 < mem_size-4 && mem[currentIndex+2] > 0)
+							currentIndex = mem[currentIndex+2];		// nextHole
+					}
+					currentIndex++;
+					if(currentIndex >= mem_size)
+						currentIndex = 0;
+				}
+			}
 			if(insuffMem)
 				throw new InsufficientMemoryException();
-			
-			MemoryBlock addedBlock = new MemoryBlock(beg, end, sz);
-			list.add(list.indexOf(spaceBlock), addedBlock);
-			if (blockToRemove != null) // if there is a block to remove from the linked list, remove it
-			{
-				list.remove(blockToRemove);
-			}
-		
-			return beg + 3;
+			return returnResult;
 		}
 		else
 			return -1;
@@ -142,112 +196,12 @@ public class MemoryManager{
 	
 	public void mm_release(int begIndex) throws Exception
 	{
-		MemoryBlock blockToRemove = null;
-		boolean shouldRemoveBlock = true;
 		boolean leftHole = false;
 		boolean rightHole = false;
 		int sizeRemoved = 0;
-		for(MemoryBlock i : list)
-		{
-			if(i.beginningIndex == begIndex)
-			{
-				blockToRemove = i;
-				if(i.usableSize < 0)
-					throw new Exception("Release request is a hole");
-				break;
-			}
-		}
 		
-		MemoryBlock blockToEdit = null;
-		int index = 0;
-		int indexLeft = 0;
-		if(blockToRemove==null)
-		{
-			throw new Exception("Cannot find a block with index of " + begIndex);
-		}
-		else
-		{
-			if(blockToRemove.beginningIndex-1 == -1) // if removed block is left-bound
-			{
-				shouldRemoveBlock = false;
-				list.get(list.indexOf(blockToRemove)).usableSize = -list.get(list.indexOf(blockToRemove)).usableSize;
-				// might have to updateblockToRemove here
-			}
-			else	// if the block is not left-bound
-			{
-				// check left side of the new hole
-				for(MemoryBlock i : list)
-				{
-					if (blockToRemove.beginningIndex-1 >= 0				// if the left side is an adjacent hole
-							&& blockToRemove.beginningIndex-1 == i.endingIndex
-							&& i.usableSize < 0)
-					{	
-						leftHole = true;
-						sizeRemoved = Math.abs(blockToRemove.usableSize);
-						blockToEdit = i;
-						index = list.indexOf(i);
-						indexLeft = index;
-						break;		// break bc we found the left-hole
-					}	
-				}
-
-				if(blockToEdit != null) // if the left adjacent block was a hole
-				{
-					// set the new size of the left hole
-					blockToEdit.usableSize = -(-blockToEdit.usableSize + 4 + blockToRemove.usableSize);
-					// set new endIndex of left hole
-					blockToEdit.endingIndex = 4 + blockToRemove.usableSize;
-					// replace with a new left hole on the linked list
-					list.set(index, blockToEdit);
-				}
-			}
-			blockToEdit = null;
-			if(blockToRemove.endingIndex+1 == mem_size) // if removed block is right-bound
-			{
-				shouldRemoveBlock = false;
-				int size = list.get(list.indexOf(blockToRemove)).usableSize;
-				if(size > 0)
-					list.get(list.indexOf(blockToRemove)).usableSize = -size;
-			}	
-			else // if removed block is not right bound
-			{
-				// check right side of the new hole
-				for(MemoryBlock i : list)
-				{
-					if(blockToRemove.endingIndex+1 < mem_size		// if there is a hole to the right of new hole
-							&& blockToRemove.endingIndex+1 == i.beginningIndex
-							&& i.usableSize < 0)
-					{
-						rightHole = true;
-						blockToEdit = i;
-						index = list.indexOf(i);
-						break;
-					}
-				}
-				if(blockToEdit != null)
-				{
-					// set new size of right hole
-					blockToEdit.usableSize = -(-blockToEdit.usableSize + 4 + blockToRemove.usableSize);
-					// set new beginningIndex
-					blockToEdit.beginningIndex = blockToRemove.beginningIndex;
-					// replace
-					list.set(index, blockToEdit);
-				}
-			}
 		
-			if(shouldRemoveBlock)
-			{
-				list.remove(blockToRemove);
-			}
-		
-			if(leftHole && rightHole)
-			{
-				int rightHolesSize = Math.abs(list.get(index).usableSize);
-				list.get(indexLeft).endingIndex = 4 + sizeRemoved + 4 + rightHolesSize; 
-				list.get(indexLeft).usableSize = -(1 + 4 + sizeRemoved + 4 + rightHolesSize);
-				list.remove(index);
-			}
-		}
+			
 	}
 	
 	public void setFirstFit()
@@ -260,36 +214,17 @@ public class MemoryManager{
 		this.strat = "nextfit";
 	}
 	
-	class MemoryBlock
-	{
-		int beginningIndex;
-		int endingIndex;
-		
-		int usableSize;
-		
-		public MemoryBlock(int beg, int end, int sz)
-		{
-			this.beginningIndex = beg;
-			this.endingIndex = end;
-			this.usableSize = sz;
-		}
-	}
-	
-//	public int getHolesCounted()
-//	{
-//		return holesCounted;
-//	}
 	
 	public double recordMemoryUtilization()
 	{
 		int usedSize = 0;
-		for(MemoryBlock i : list)
-		{
-			if(i.usableSize > 0)
-			{
-				usedSize += i.usableSize;
-			}
-		}
+//		for(int i = 0 : mem)
+//		{
+//			if(i.usableSize > 0)
+//			{
+//				usedSize += i.usableSize;
+//			}
+//		}
 		double temp = (double) usedSize / (double) mem_size;
 	//	System.out.println(temp);
 		return temp;

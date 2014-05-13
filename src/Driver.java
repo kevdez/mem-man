@@ -102,12 +102,8 @@ public class Driver {
 
 	private int nextIndexToRemove()
 	{
-		int i = random.nextInt(mem_man.list.size());
-		while(mem_man.list.get(i).usableSize < 0)
-		{
-			i = random.nextInt(mem_man.list.size());
-		}
-		return i;
+		
+		return 0;
 	}
 
 	public void displayResults()
