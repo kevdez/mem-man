@@ -1,4 +1,3 @@
-import java.util.Arrays;
 import java.util.LinkedList;
 
 public class MemoryManager{
@@ -8,7 +7,8 @@ public class MemoryManager{
 	String strat;
 	
 	private int currentIndex;
-	public int holesCounted;
+	public int holesCounted1;
+	public int holesCounted2;
 	
 	public LinkedList<MemoryBlock> list;
 	
@@ -16,31 +16,20 @@ public class MemoryManager{
 	{
 		this.mem_size = mem_size;
 		this.strat = strat;
-		this.list = new LinkedList<MemoryBlock>();
-		this.holesCounted = 0;
-		
-		this.list.add(mm_init());
-		
-		
+		this.holesCounted1 = 0;
+		this.holesCounted2 = 0;
+		this.mm_init();
 	}
 	
 //	The three main memory manager functions
-	public MemoryBlock mm_init()
+	public void mm_init()
 	{
 		this.currentIndex = 0;
-		this.holesCounted = 0;
-		this.mem = new int[mem_size];
-		Arrays.fill(mem, 0);
-		
-		// tag + size
-		mem[0] = -(mem_size - 4);
-		mem[mem_size-1] = -(mem_size - 4);
-		
-		// predecessor and successor
-		mem[1] = -1;			// purposefully out of bounds
-		mem[2] = mem_size+1;	// purposefully out of bounds
-		
-		return new MemoryBlock(0, mem_size, -(mem_size-4));
+		this.holesCounted1 = 0;
+		this.holesCounted2 = 0;
+		this.list = new LinkedList<MemoryBlock>();
+		MemoryBlock temp = new MemoryBlock(0, mem_size, -(mem_size-4));
+		list.add(temp);
 	}
 	
 //	returns index of first usable word or error if insufficient memory
@@ -59,7 +48,7 @@ public class MemoryManager{
 			for(MemoryBlock i : list)
 			{
 				if (i.usableSize < 0)		// if there is a hole, count it
-					holesCounted++;
+					holesCounted1++;
 				if ( -(i.usableSize) >= n ) // available size >= n
 				{
 					insuffMem = false;
@@ -91,7 +80,8 @@ public class MemoryManager{
 			list.add(list.indexOf(spaceBlock), addedBlock);
 			if (blockToRemove != null) // if there is a block to remove from the linked list, remove it
 			{
-				list.remove(blockToRemove);
+//				list.remove(blockToRemove);
+				blockToRemove.usableSize = 0;
 			}
 			return beg + 3;
 			
@@ -102,16 +92,17 @@ public class MemoryManager{
 			int temp = currentIndex;
 			do
 			{
+//				System.out.println(currentIndex);
 				if(list.get(currentIndex).usableSize < 0) // if there is a hole, count it
 				{
-					holesCounted++;
+					holesCounted2++;
 					if( -(list.get(currentIndex).usableSize) >= n) // if there is a hole big enough
 					{
 						insuffMem = false;
 						
 						beg = list.get(currentIndex).beginningIndex;
 						sz = n;
-						end = list.get(currentIndex).endingIndex + n + 3;
+						end = list.get(currentIndex).beginningIndex + n + 3;
 						
 						if( (list.get(currentIndex).endingIndex - end) >= 5 ) // if there is still a hole
 						{
@@ -124,10 +115,8 @@ public class MemoryManager{
 							blockToRemove = list.get(currentIndex);
 						}
 						break;
-					}
-					
-				}
-				
+					}	
+				}				
 				currentIndex++;
 				if(currentIndex == list.size())
 					currentIndex = 0;
@@ -253,7 +242,6 @@ public class MemoryManager{
 		
 			if(leftHole && rightHole)
 			{
-				System.out.println("two holes on adjacent sides");
 				int rightHolesSize = Math.abs(list.get(index).usableSize);
 				list.get(indexLeft).endingIndex = 4 + sizeRemoved + 4 + rightHolesSize; 
 				list.get(indexLeft).usableSize = -(1 + 4 + sizeRemoved + 4 + rightHolesSize);
@@ -302,8 +290,9 @@ public class MemoryManager{
 				usedSize += i.usableSize;
 			}
 		}
-		
-		return usedSize / mem_size;
+		double temp = (double) usedSize / (double) mem_size;
+	//	System.out.println(temp);
+		return temp;
 	}
 	
 	public class InsufficientMemoryException extends Exception

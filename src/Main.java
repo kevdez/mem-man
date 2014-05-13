@@ -3,8 +3,8 @@ public class Main {
 	
 	public static void main(String[] args) {
 		
-		double average = 200;
-		double distribution = 100;
+		double average = 3000;
+		double distribution = 300;
 		int simulation_steps = 10000;
 		int memory_size = 5000;
 

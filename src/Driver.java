@@ -49,16 +49,14 @@ public class Driver {
 			
 			// record memory utilization
 			util1[i] = mem_man.recordMemoryUtilization();
-			searchtime1[i] = mem_man.holesCounted;
+			searchtime1[i] = mem_man.holesCounted1;
 			
 			// select block p to be released
 			try {
 				mem_man.mm_release(nextIndexToRemove());
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+//				e.printStackTrace();
 			}
-			
 			continueRunning = true;
 		}
 		
@@ -82,16 +80,15 @@ public class Driver {
 			
 			// record memory utilization
 			util2[i] = mem_man.recordMemoryUtilization();
-			searchtime2[i] = mem_man.holesCounted;
+			searchtime2[i] = mem_man.holesCounted2;
 			
 			// select block p to be released
 			try {
 				mem_man.mm_release(nextIndexToRemove());
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
-				e.printStackTrace();
+//				e.printStackTrace();
 			}
-			
 			continueRunning = true;
 		}
 	}
